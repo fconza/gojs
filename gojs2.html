@@ -1,0 +1,380 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>GoJS Visual Tree</title>
+  <meta name="description" content="Show the visual elements of a simple diagram as a tree diagram -- each Node is data bound to an element of the other Diagram." />
+  <!-- Copyright 1998-2018 by Northwoods Software Corporation. -->
+  <meta charset="UTF-8">
+
+
+<style type="text/css">
+  #myDiagramDiv {
+    border: solid 1px black;
+    width:400px;
+    height:400px;
+    margin-right: 12px;
+    float: left;
+    background-color: whitesmoke;
+  }
+  #controls {
+    border: solid 1px gray;
+    width: 250px;
+    background: #ffffff;
+    padding: 5px;
+    float: left;
+  }
+  #infoBoxHolder {
+    z-index: 300;
+    position: absolute;
+    left: 5px;
+  }
+  #infoBox {
+    border: 1px solid #999;
+    padding: 8px;
+    background-color: whitesmoke;
+    opacity:0.9;
+    position: relative;
+    width: 170px;
+    //height: 60px;
+    font-family: arial, helvetica, sans-serif;
+    font-weight: bold;
+    font-size: 11px;
+  }
+  /* this is known as the "clearfix" hack to allow
+     floated objects to add to the height of a div */
+  #infoBox:after {
+    visibility: hidden;
+    display: block;
+    font-size: 0;
+    content: " ";
+    clear: both;
+    height: 0;
+  }
+  div.infoTitle {
+    width: 60px;
+    font-weight: normal;
+    color:  #787878;
+    float: left;
+    margin-left: 4px;
+  }
+  div.infoValues {
+    width: 200px;
+    text-align: left;
+    float: left;
+  }
+  label:hover, label:focus { background: #CEDFF2; }
+</style>
+
+
+  <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
+  <script src="./go.js"></script>
+  <script id="cfs">
+  function afterText() {
+      $.getJSON('./data2.json', function(data) {
+      myData = data
+      var items = [];
+      $('#json_call').html('<p><table style="width:100%"> <caption>Monthly savings</caption>');
+      $('#json_call').html('<tr><th>ID</th><th>FirstName</th><th>last_name</th><th>email</th><th>gender</th><th>status</th><th>parent</th></tr>');
+      $.each( data.items, function( i, item ) {
+        //items.push( "<li id='" + key + "'>" + val + "</li>" );
+        $('#json_call').append(
+          '<tr><td>' + item.id + '</td>' +
+          '<td>' + item.first_name + '</td>' +
+          '<td>' + item.last_name + '</td>' +
+          '<td>' + item.email + '</td>' +
+          '<td>' + item.gender + '</td>' +
+          '<td>' + item.status + '</td>' +
+          '<td>' + item.parent + '</td></tr>'
+        );
+      });
+
+      $('#json_call').append('</table></p>');
+      $('#json_call').append('<p>Copyright@</p>');
+      init(myData)
+    });
+  }
+  </script >
+  <script id="code">
+
+    var lastStroked = null;  // this remembers the last highlit Shape
+
+    function init(data) {
+      if ( typeof data != "undefined") {
+        //
+      }
+      else {
+        alert("data not defined");
+      }
+      if (window.goSamples) goSamples();  // init for these samples -- you don't need to call this
+      var $ = go.GraphObject.make;  // for conciseness in defining templates
+
+      var myToolTip = $(go.HTMLInfo, {
+        show: showToolTip,
+        // do nothing on hide: This tooltip doesn't hide unless the mouse leaves the diagram
+      })
+
+      myDiagram =
+        $(go.Diagram, "myDiagramDiv",
+          { // start everything in the middle of the viewport
+            initialContentAlignment: go.Spot.Center,
+            allowCopy: false,
+            "draggingTool.dragsTree": true,
+            "commandHandler.deletesTree": true,
+            "undoManager.isEnabled": true,
+            "toolManager.hoverDelay": 10,  // how quickly tooltips are shown
+            isReadOnly: true,  // don't let users modify anything
+            mouseOver: doMouseOver,  // this event handler is defined below
+            click: doMouseOver  // this event handler is defined below
+          });
+
+          var bluegrad   = '#87CEFA';
+          var greengrad  = '#228B22';
+          var redgrad    = '#DC143C';
+          var orangegrad = '#FF8C00';
+          var grey       = '#C0C0C0';
+
+          // Set up a Part as a legend, and place it directly on the diagram
+          myDiagram.add(
+            $(go.Part, "Table",
+              { position: new go.Point(-250, -250), selectable: false },
+              $(go.TextBlock, "Legend",
+                { row: 0, font: "700 14px Droid Serif, sans-serif" }),  // end row 0
+              $(go.Panel, "Horizontal",
+                { row: 1, alignment: go.Spot.Left },
+                $(go.Shape, "Rectangle",
+                  { desiredSize: new go.Size(20, 20), fill: greengrad, margin: 5 }),
+                $(go.TextBlock, "Supported",
+                  { font: "700 13px Droid Serif, sans-serif" })
+              ),  // end row 1
+              $(go.Panel, "Horizontal",
+                { row: 2, alignment: go.Spot.Left },
+                $(go.Shape, "Rectangle",
+                  { desiredSize: new go.Size(20, 20), fill: bluegrad, margin: 5 }),
+                $(go.TextBlock, "New Standard",
+                  { font: "700 13px Droid Serif, sans-serif" })
+              ),  // end row 2
+              $(go.Panel, "Horizontal",
+                { row: 3, alignment: go.Spot.Left },
+                $(go.Shape, "Rectangle",
+                  { desiredSize: new go.Size(20, 20), fill: orangegrad, margin: 5 }),
+                $(go.TextBlock, "Near End of Support",
+                  { font: "700 13px Droid Serif, sans-serif" })
+              ), // end row 3
+              $(go.Panel, "Horizontal",
+                { row: 4, alignment: go.Spot.Left },
+                $(go.Shape, "Rectangle",
+                  { desiredSize: new go.Size(20, 20), fill: redgrad, margin: 5 }),
+                $(go.TextBlock, "Not Supported",
+                  { font: "700 13px Droid Serif, sans-serif" })
+              )  // end row 4
+            ));
+
+
+
+
+
+      // define the color of the node depending of the support status
+      function statusColorConverter(status) {
+        if (status === "supported") return greengrad;
+        if (status === "new standard") return bluegrad;
+        if (status === "not supported") return redgrad;
+        if (status === "near end of support") return orangegrad;
+        return "grey";
+      }
+      // define the "sample" Node template
+      myDiagram.nodeTemplate =
+        $(go.Node, "Auto",
+          {
+            selectable: false,
+            toolTip: myToolTip
+          },
+          new go.Binding("location", "", function(nothing, elt) {
+            return new go.Point(elt.data[myLocation.x]*200,
+                                elt.data[myLocation.y]*200)
+          }),
+          $(go.Shape, "RoundedRectangle",  // define the node's outer shape
+            {
+              name: "SHAPE",
+              //fill: "white",
+              width: 80, height: 40,
+              strokeWidth: 4, stroke: null
+            },
+            new go.Binding("fill", "color")),
+          $(go.TextBlock,  // define the node's text
+            { margin: 5 },
+            new go.Binding("text", "key"))
+        );
+
+        myDiagram.linkTemplate =
+          $(go.Link, go.Link.Bezier,
+            $(go.Shape, { strokeWidth: 1.5 }),
+            $(go.Shape, { toArrow: "Standard" })
+          );
+
+////////////////////////////////
+          var keyArrayOfHash = [];
+          var fromArrayOfHash = [];
+          //for each ( var item in data.items ) {
+          data.items.forEach( function(item) {
+            //items.push( "<li id='" + key + "'>" + val + "</li>" );
+            keyArrayOfHash.push( { key: item.first_name , color: statusColorConverter(item.status) } );
+            if (item.parent != "") {
+              fromArrayOfHash.push( { from: item.parent , to: item.first_name } );
+            }
+          });
+
+      myDiagram.model = new go.GraphLinksModel(keyArrayOfHash,fromArrayOfHash);
+      //myDiagram.model = new go.Model(keyArrayOfHash,fromArrayOfHash);
+      // Called when the mouse is over the diagram's background
+      function doMouseOver(e) {
+        if (e === undefined) e = myDiagram.lastInput;
+        var doc = e.documentPoint;
+        // find all Nodes that are within 100 units
+        var list = myDiagram.findObjectsNear(doc, 100, null, function(x) { return x instanceof go.Node; });
+        // now find the one that is closest to e.documentPoint
+        var closest = null;
+        var closestDist = 999999999;
+        list.each(function(node) {
+          var dist = doc.distanceSquaredPoint(node.getDocumentPoint(go.Spot.Center));
+          if (dist < closestDist) {
+            closestDist = dist;
+            closest = node;
+          }
+        });
+        showToolTip(closest, myDiagram);
+      }
+
+      function getLineofData(myKey) {
+        data.items.forEach( function(item) {
+          //items.push( "<li id='" + key + "'>" + val + "</li>" );
+          keyArrayOfHash.push( { key: item.first_name , color: "lightblue" } );
+          if (item.first_name == myKey) {
+            findItem = item;
+          }
+        });
+        return findItem;
+      }
+
+      // Called with a Node (or null) that the mouse is over or near
+      function showToolTip(obj, diagram) {
+        if (obj !== null) {
+          var node = obj.part;
+          var e = diagram.lastInput;
+          var shape = node.findObject("SHAPE");
+          shape.stroke = "white";
+          if (lastStroked !== null && lastStroked !== shape) lastStroked.stroke = null;
+          lastStroked = shape;
+          //updateInfoBox(e.viewPoint, node.data);
+          myKey = node.data.key;
+          myData = getLineofData(myKey);
+          updateInfoBox(e.viewPoint, myData);
+        }
+        else {
+          if (lastStroked !== null) lastStroked.stroke = null;
+          lastStroked = null;
+          document.getElementById("infoBoxHolder").innerHTML = "";
+        }
+      }
+      // Make sure the infoBox is momentarily hidden if the user tries to mouse over it
+    var infoBoxH = document.getElementById("infoBoxHolder");
+    infoBoxH.addEventListener("mousemove", function() {
+      var box = document.getElementById("infoBoxHolder");
+      box.style.left = parseInt(box.style.left) + "px";
+      box.style.top = parseInt(box.style.top)+30 + "px";
+    }, false);
+
+    var diagramDiv = document.getElementById("myDiagramDiv");
+    // Make sure the infoBox is hidden when the mouse is not over the Diagram
+    diagramDiv.addEventListener("mouseout", function(e) {
+      if (lastStroked !== null) lastStroked.stroke = null;
+      lastStroked = null;
+
+      var infoBox = document.getElementById("infoBox");
+      var elem = document.elementFromPoint(e.clientX, e.clientY);
+      if (elem !== null && (elem === infoBox || elem.parentNode === infoBox)) {
+        var box = document.getElementById("infoBoxHolder");
+        box.style.left = parseInt(box.style.left) + "px";
+        box.style.top = parseInt(box.style.top)+30 + "px";
+      } else {
+        var box = document.getElementById("infoBoxHolder");
+        box.innerHTML = "";
+      }
+    }, false);
+
+      /*
+        [
+          { key: "Alpha", color: "lightblue", location: new go.Point(0, 0) },
+          { key: "Beta", color: "pink", location: new go.Point(60, 80) }
+        ],
+        [
+          { from: "Alpha", to: "Beta" },
+          { from: "Beta", to: "Alpha"}
+        ]
+      );
+      */
+////////////////////////////////
+
+    // Draw the Table from Json and call the graph functions
+
+  }
+  </script>
+
+  <script type="text/javascript">
+  // This function is called to update the tooltip information
+  // depending on the bound data of the Node that is closest to the pointer.
+  function updateInfoBox(mousePt, data) {
+    var box = document.getElementById("infoBoxHolder");
+    box.innerHTML = "";
+    var infobox = document.createElement("div");
+    infobox.id = "infoBox";
+    box.appendChild(infobox);
+    for (var i = 0; i < 9; i++) {
+      var child = document.createElement("div");
+      switch (i) {
+        case 0: child.textContent = data.species; break;
+        case 1: child.className = "infoTitle"; child.textContent = "first_name"; break;
+        case 2: child.className = "infoValues"; child.textContent = data.first_name; break;
+        case 3: child.className = "infoTitle"; child.textContent = "last_name"; break;
+        case 4: child.className = "infoValues"; child.textContent = data.last_name; break;
+        case 5: child.className = "infoTitle"; child.textContent = "email"; break;
+        case 6: child.className = "infoValues"; child.textContent = data.email; break;
+        case 7: child.className = "infoTitle"; child.textContent = "gender"; break;
+        case 8: child.className = "infoValues"; child.textContent = data.gender; break;
+      }
+      infobox.appendChild(child);
+    }
+    box.style.left = mousePt.x + 30 + "px";
+    box.style.top = mousePt.y + 20 + "px";
+  }
+
+  $(document).ready(function(){
+    // jQuery methods go here...
+
+    //$("button").click(function(){
+          // Some code
+    //});
+
+  });
+</script>
+
+</head>
+<body >
+  <div id="sample">
+    <div style="display: inline-block">
+      <!--The DIV for the Diagram needs an explicit size or else we won't see anything.
+           Also add a border to help see the edges. -->
+      <div id="myDiagramDiv" style="background-color: #3D3D3D; border: solid 1px black; width:800px; height:800px"></div>
+      <!-- This sibling of the Diagram provides information when the mouse is near a Diagram Node -->
+      <div id="infoBoxHolder">
+        <!-- Initially Empty, it is populated when updateInfoBox is called -->
+      </div>
+
+    </div>
+  </div>
+  <div id="json_call">
+    <button onclick="afterText()">Click me to show Table</button>
+  </div>
+</body>
+
+</html>

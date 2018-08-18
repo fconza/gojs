@@ -1,0 +1,40 @@
+{
+  "items": [
+    {
+      "id": 1,
+      "first_name": "Beverlie",
+      "last_name": "Yeoman",
+      "email": "byeoman0@google.it",
+      "gender": "Female",
+      "status": "supported",
+      "parent":  ""
+    },
+    {
+      "id": 2,
+      "first_name": "Mabel",
+      "last_name": "Saurin",
+      "email": "msaurin1@facebook.com",
+      "gender": "Female",
+      "status": "new standard",
+      "parent": "Beverlie"
+    },
+    {
+      "id": 3,
+      "first_name": "Magnum",
+      "last_name": "Moniker",
+      "email": "mmoniker2@geocities.com",
+      "gender": "Male",
+      "status": "near end of support",
+      "parent": "Mabel"
+    },
+    {
+      "id": 4,
+      "first_name": "toto",
+      "last_name": "titi",
+      "email": "titi@facebook.com",
+      "gender": "Female",
+      "status": "not supported",
+      "parent": "Beverlie"
+    }
+  ]
+}
